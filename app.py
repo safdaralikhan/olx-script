@@ -23,6 +23,9 @@ page_numbers = [1, 2, 3, 4, 5]
 
 try:
     for model in iphone_models:
+        # Set to store unique links
+        unique_links = set()
+
         for page in page_numbers:
             url = url_template.format(model=model, page=page)
             print(f"Attempting to open URL: {url}")
@@ -46,20 +49,24 @@ try:
             soup = BeautifulSoup(driver.page_source, 'html.parser')
             listings = soup.select('ul._1aad128c li a[href]')
 
-            # Save links to CSV
-            csv_filename = f"iphone{model}_page{page}.csv"
-            with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
-                writer = csv.writer(file)
-                writer.writerow(["Link"])
+            # Add links to the set to ensure uniqueness
+            for listing in listings:
+                link = listing['href']
+                if '/item/' in link:
+                    full_link = f"https://www.olx.com.pk{link}"
+                    unique_links.add(full_link)
 
-                for listing in listings:
-                    link = listing['href']
-                    if '/item/' in link:
-                        full_link = f"https://www.olx.com.pk{link}"
-                        writer.writerow([full_link])
-                        print(f"Extracted Link: {full_link}")
+        # Save all unique links for this model into a single CSV file
+        csv_filename = f"iphone{model}.csv"
+        with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Link"])  # Write header
 
-            print(f"Links for iphone{model}_page{page} saved to {csv_filename}")
+            for link in unique_links:
+                writer.writerow([link])
+                print(f"Saved Link: {link}")
+
+        print(f"All unique links for iPhone {model} saved to {csv_filename}")
 
 finally:
     driver.quit()
